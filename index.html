@@ -329,7 +329,7 @@ function App(){
   const say=m=>{setToast(m);clearTimeout(window._tt);window._tt=setTimeout(()=>setToast(''),2200)};
 
   useEffect(()=>{ls.set(KC,colorTheme);applyTheme(colorTheme)},[colorTheme]);
-  useEffect(()=>{ls.set('reimburse_dark',isDark);if(isDark){document.documentElement.classList.add('dark');document.querySelector('meta[name="theme-color"]').setAttribute('content','#0f1412')}else{document.documentElement.classList.remove('dark');document.querySelector('meta[name="theme-color"]').setAttribute('content','#f3f6f4')}},[isDark]);
+  useEffect(()=>{ls.set('reimburse_dark',isDark);const meta=document.querySelector('meta[name="theme-color"]');if(isDark){document.documentElement.classList.add('dark');if(meta)meta.setAttribute('content','#0f1412')}else{document.documentElement.classList.remove('dark');if(meta)meta.setAttribute('content','#f3f6f4')}},[isDark]);
   useEffect(()=>{(async()=>{
     const norm=(d)=>{const t=(d&&d.tanggal)||today();return (Array.isArray(d&&d.items)?d.items:[]).map(x=>({...x,id:x.id||uid(),lokasi:String(x.lokasi||''),biaya:Number(x.biaya)||0,tanggal:x.tanggal||t,kat:x.kat==='lain'?'lain':'parkir'}))};
     const l=ls.get(KR,null);if(l){if(l.tanggal)setTgl(l.tanggal);if(l.nama)setNama(l.nama);if(Array.isArray(l.items))setItems(norm(l))}
@@ -522,9 +522,40 @@ function App(){
       h('div',{className:'flex items-start justify-between gap-3'},h('div',{className:'min-w-0'},h('p',{className:'font-extrabold text-[15px]'},dshort(r.tanggal)),h('p',{className:'text-[12px] mt-0.5',style:{color:'var(--ts)'}},(r.nama||'Petugas -')+' \u2022 '+r.items.length+' item')),h('p',{className:'mono font-semibold text-[14px] whitespace-nowrap'},rp(r.total))),
       h('div',{className:'flex gap-2 mt-3'},h('button',{onClick:()=>restore(r),className:'btn ghost h-10 flex-1 text-[13px]'},h(Ic,{n:'reset',c:'w-4 h-4'}),'Buka kembali'),h('button',{'aria-label':'Hapus riwayat',onClick:()=>delHist(r.id),className:'ib',style:{color:'var(--dn)'}},h(Ic,{n:'trash',c:'w-4 h-4'}))))),
     rw.length>0&&h('p',{className:'text-center text-[11px]',style:{color:'var(--ts)'}},'Foto tidak disimpan di riwayat.'));
-  const settingUI=()=>h('div',{className:'up space-y-4'},h('div',{className:'flex items-center justify-between px-1'},h('h1',{className:'text-[22px] font-extrabold tracking-tight'},'Setelan')),h('div',{className:'card p-5 space-y-5'},h('div',null,h('span',{className:'lbl flex items-center gap-1 mb-1.5'},h(Ic,{n:'user',c:'w-3 h-3'}),'Profil Petugas'),h('input',{type:'text',className:'inp',placeholder:'Nama kamu',value:nama,onChange:e=>setNama(e.target.value)}),h('p',{className:'text-[11px] mt-2',style:{color:'var(--ts)'}},'Nama ini akan otomatis tersimpan untuk laporan berikutnya.')),h('div',null,h('span',{className:'lbl flex items-center gap-1 mb-1.5'},h(Ic,{n:'palette',c:'w-3 h-3'}),'Warna Tema'),h('div',{className:'flex flex-wrap gap-2.5 mt-2'},Object.keys(THEMES).map(k=>h('button',{key:k,onClick:()=>setColorTheme(k),className:'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all '+(colorTheme===k?'border-[var(--tx)] scale-110':'border-transparent'),style:{background:'linear-gradient(135deg,'+THEMES[k][0]+','+THEMES[k][1]+')'}},colorTheme===k&&h(Ic,{n:'check',c:'w-5 h-5 text-white'})))))),
-        h('div',{className:'mt-4 flex items-center justify-between'},h('span',{className:'lbl flex items-center gap-1'},h(Ic,{n:isDark?'moon':'sun',c:'w-3 h-3'}),'Mode Gelap'),h('button',{onClick:()=>setIsDark(!isDark),className:'w-12 h-6 rounded-full relative transition-colors',style:{background:isDark?'var(--ac)':'var(--bd)'}},h('div',{className:'w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all',style:{left:isDark?'26px':'2px',boxShadow:'0 1px 3px rgba(0,0,0,.2)'}}))))),h('div',{className:'card p-5'},h('p',{className:'text-[13px] mb-4',style:{color:'var(--ts)'}},'Simpan seluruh data (laporan aktif, riwayat, template, dan tema) ke dalam satu file JSON.'),h('div',{className:'space-y-3'},h('button',{onClick:backupData,className:'btn pri h-12 w-full'},h(Ic,{n:'dl',c:'w-5 h-5'}),'Unduh Backup (.json)'),h('input',{type:'file',accept:'.json',ref:fileRefRestore,hidden:true,onChange:restoreData}),h('button',{onClick:()=>fileRefRestore.current&&fileRefRestore.current.click(),className:'btn ghost h-12 w-full'},h(Ic,{n:'sheet',c:'w-5 h-5'}),'Pulihkan dari File'))),
-    h('div',{className:'card p-5'},h('p',{className:'text-[13px] mb-4',style:{color:'var(--ts)'}},'Jika aplikasi terasa lambat atau tidak sinkron dengan versi terbaru, paksa perbarui di sini.'),h('button',{onClick:forceUpdate,className:'btn ghost h-12 w-full',style:{color:'var(--ac)'}},h(Ic,{n:'reset',c:'w-5 h-5'}),'Force Update Aplikasi'))));
+  const settingUI=()=>h('div',{className:'up space-y-4'},
+    h('div',{className:'flex items-center justify-between px-1'},h('h1',{className:'text-[22px] font-extrabold tracking-tight'},'Setelan')),
+    h('div',{className:'card p-5 space-y-5'},
+      h('div',null,
+        h('span',{className:'lbl flex items-center gap-1 mb-1.5'},h(Ic,{n:'user',c:'w-3 h-3'}),'Profil Petugas'),
+        h('input',{type:'text',className:'inp',placeholder:'Nama kamu',value:nama,onChange:e=>setNama(e.target.value)}),
+        h('p',{className:'text-[11px] mt-2',style:{color:'var(--ts)'}},'Nama ini akan otomatis tersimpan untuk laporan berikutnya.')
+      ),
+      h('div',null,
+        h('span',{className:'lbl flex items-center gap-1 mb-1.5'},h(Ic,{n:'palette',c:'w-3 h-3'}),'Warna Tema'),
+        h('div',{className:'flex flex-wrap gap-2.5 mt-2'},
+          Object.keys(THEMES).map(k=>h('button',{key:k,onClick:()=>setColorTheme(k),className:'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all '+(colorTheme===k?'border-[var(--tx)] scale-110':'border-transparent'),style:{background:'linear-gradient(135deg,'+THEMES[k][0]+','+THEMES[k][1]+')'}},colorTheme===k&&h(Ic,{n:'check',c:'w-5 h-5 text-white'})))
+        ),
+        h('div',{className:'mt-4 flex items-center justify-between'},
+          h('span',{className:'lbl flex items-center gap-1'},h(Ic,{n:isDark?'moon':'sun',c:'w-3 h-3'}),'Mode Gelap'),
+          h('button',{onClick:()=>setIsDark(!isDark),className:'w-12 h-6 rounded-full relative transition-colors',style:{background:isDark?'var(--ac)':'var(--bd)'}},
+            h('div',{className:'w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all',style:{left:isDark?'26px':'2px',boxShadow:'0 1px 3px rgba(0,0,0,.2)'}})
+          )
+        )
+      )
+    ),
+    h('div',{className:'card p-5'},
+      h('p',{className:'text-[13px] mb-4',style:{color:'var(--ts)'}},'Simpan seluruh data (laporan aktif, riwayat, template, dan tema) ke dalam satu file JSON.'),
+      h('div',{className:'space-y-3'},
+        h('button',{onClick:backupData,className:'btn pri h-12 w-full'},h(Ic,{n:'dl',c:'w-5 h-5'}),'Unduh Backup (.json)'),
+        h('input',{type:'file',accept:'.json',ref:fileRefRestore,hidden:true,onChange:restoreData}),
+        h('button',{onClick:()=>fileRefRestore.current&&fileRefRestore.current.click(),className:'btn ghost h-12 w-full'},h(Ic,{n:'sheet',c:'w-5 h-5'}),'Pulihkan dari File')
+      )
+    ),
+    h('div',{className:'card p-5'},
+      h('p',{className:'text-[13px] mb-4',style:{color:'var(--ts)'}},'Jika aplikasi terasa lambat atau tidak sinkron dengan versi terbaru, paksa perbarui di sini.'),
+      h('button',{onClick:forceUpdate,className:'btn ghost h-12 w-full',style:{color:'var(--ac)'}},h(Ic,{n:'reset',c:'w-5 h-5'}),'Force Update Aplikasi')
+    )
+  );
   const NAV=[['beranda','home'],['template','pin'],['riwayat','hist'],['export','share'],['setting','settings']];
   return h('div',{className:'min-h-screen'},
     h('header',{className:'sticky top-0 z-30 hdr'},
@@ -543,27 +574,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 </script>
 
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(reg => {
-    // cek update tiap load
-    reg.update();
-    // kalau ada update baru, langsung aktifin
-    if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
-    reg.addEventListener('updatefound', () => {
-      reg.installing.addEventListener('statechange', () => {
-        if (reg.installing.state === 'installed' && navigator.serviceWorker.controller) {
-          // ada versi baru, reload otomatis biar update cepat
-          window.location.reload();
-        }
+try {
+  if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      // cek update tiap load
+      reg.update();
+      // kalau ada update baru, langsung aktifin
+      if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+      reg.addEventListener('updatefound', () => {
+        reg.installing.addEventListener('statechange', () => {
+          if (reg.installing.state === 'installed' && navigator.serviceWorker.controller) {
+            // ada versi baru, reload otomatis biar update cepat
+            window.location.reload();
+          }
+        });
       });
     });
-  });
-  // kalau SW baru take over, reload
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) { refreshing = true; window.location.reload(); }
-  });
-}
+    // kalau SW baru take over, reload
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) { refreshing = true; window.location.reload(); }
+    });
+  }
+} catch (e) { console.log('SW disabled in sandbox'); }
 </script>
 </body>
 </html>
