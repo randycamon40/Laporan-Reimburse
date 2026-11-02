@@ -1,0 +1,18 @@
+# Cloudflare Pages _headers
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Content-Type: application/javascript; charset=utf-8
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/manifest+json
+
+/*.png
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
